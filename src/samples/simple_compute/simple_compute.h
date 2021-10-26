@@ -14,6 +14,8 @@
 class SimpleCompute : public ICompute
 {
 public:
+  static const uint32_t WORK_GROUP_SIZE = 256;
+
   SimpleCompute(uint32_t a_length);
   ~SimpleCompute()  { Cleanup(); };
 
@@ -58,6 +60,7 @@ private:
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
   uint32_t m_length  = 16u;
+  uint32_t m_nWorkGroups = 1u;
   
   VkPhysicalDeviceFeatures m_enabledDeviceFeatures = {};
   std::vector<const char*> m_deviceExtensions      = {};
@@ -67,21 +70,23 @@ private:
   std::vector<const char*> m_validationLayers;
   std::shared_ptr<vk_utils::ICopyEngine> m_pCopyHelper;
 
-  VkDescriptorSet       m_sumDS; 
-  VkDescriptorSetLayout m_sumDSLayout = nullptr;
+  VkDescriptorSet       m_scanDS1, m_scanDS2, m_scanDS3; 
+  VkDescriptorSetLayout m_scanDSLayout1 = nullptr, m_scanDSLayout2 = nullptr, m_scanDSLayout3 = nullptr;
   
-  VkPipeline m_pipeline;
-  VkPipelineLayout m_layout;
+  VkPipeline m_pipeline1, m_pipeline2, m_pipeline3;
+  VkPipelineLayout m_layout1, m_layout2, m_layout3;
 
-  VkBuffer m_A, m_B, m_sum;
+  VkBuffer m_buffInput, m_buffScans, m_buffOffsets;
  
   void CreateInstance();
   void CreateDevice(uint32_t a_deviceId);
 
-  void BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkPipeline a_pipeline);
+  void BuildCommandBufferScan(VkCommandBuffer a_cmdBuff, VkPipeline a_pipeline);
 
-  void SetupSimplePipeline();
-  void CreateComputePipeline();
+  void SetupPipelines();
+  void CreatePipeline(std::string spvPath, VkDescriptorSetLayout& dsLayout,
+                      VkPipelineLayout& pipelineLayout, VkPipeline& pipeline);
+  void CreatePipelines();
   void CleanupPipeline();
 
   void Cleanup();
