@@ -42,9 +42,9 @@ void main()
   
   vec4 lightColor1 = mix(dark_violet, chartreuse, abs(sin(Params.time)));
 
-  float hn = max(0.0, dot(shineDir, surf.wNorm));
-//  vec4 shineColor = pow(hn, 100.0) * lightColor2;
-  vec4 shineColor = vec4(surf.color, 1.0);
+  float hn = max(0.0, dot(shineDir, sin(2*surf.wNorm)));
+  vec4 shineColor = pow(hn, 100.0) * lightColor2;
+//  vec4 shineColor = vec4(surf.color, 1.0);
    
   vec4 lightColor = max(dot(surf.wNorm, lightDir), 0.0f) * lightColor2;
   out_fragColor   = ((0.5*lightColor*shadow + vec4(0.1f)) + shineColor) * vec4(Params.baseColor, 1.0f);

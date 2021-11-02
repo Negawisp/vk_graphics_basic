@@ -35,7 +35,7 @@ void main(void)
     const vec4 wTang = vec4(DecodeNormal(floatBitsToInt(vTexCoordAndTang.z)), 0.0f);
 
     vec3 wNormOut = mat3(transpose(inverse(params.mModel))) * wNorm.xyz;
-    float hn = max(0.0, dot(shineDir, wNormOut));
+    float hn = max(0.0, dot(shineDir, sin(2*wNormOut)));
     vec3 shineColor = pow(hn, 100.0) * lightColor2;
 
     vOut.wPos     = (params.mModel * vec4(vPosNorm.xyz, 1.0f)).xyz;
