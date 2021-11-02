@@ -2,6 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_GOOGLE_include_directive : require
 
+#include "common.h"
 #include "unpack_attributes.h"
 
 
@@ -21,8 +22,11 @@ layout (location = 0 ) out VS_OUT
     vec3 wNorm;
     vec3 wTangent;
     vec2 texCoord;
-
+    vec3 color;
 } vOut;
+
+const vec3 shineDir = normalize(vec3(0.3, 0.3, 1.0));
+const vec3 lightColor2 = vec3(1.0, 1.0, 1.0);
 
 out gl_PerVertex { vec4 gl_Position; };
 void main(void)
@@ -30,10 +34,15 @@ void main(void)
     const vec4 wNorm = vec4(DecodeNormal(floatBitsToInt(vPosNorm.w)),         0.0f);
     const vec4 wTang = vec4(DecodeNormal(floatBitsToInt(vTexCoordAndTang.z)), 0.0f);
 
+    vec3 wNormOut = mat3(transpose(inverse(params.mModel))) * wNorm.xyz;
+    float hn = max(0.0, dot(shineDir, wNormOut));
+    vec3 shineColor = pow(hn, 100.0) * lightColor2;
+
     vOut.wPos     = (params.mModel * vec4(vPosNorm.xyz, 1.0f)).xyz;
-    vOut.wNorm    = mat3(transpose(inverse(params.mModel))) * wNorm.xyz;
+    vOut.wNorm    = wNormOut;
     vOut.wTangent = mat3(transpose(inverse(params.mModel))) * wTang.xyz;
     vOut.texCoord = vTexCoordAndTang.xy;
+    vOut.color    = shineColor;
 
     gl_Position   = params.mProjView * vec4(vOut.wPos, 1.0);
 }
