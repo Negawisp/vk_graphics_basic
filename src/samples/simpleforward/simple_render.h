@@ -18,7 +18,8 @@
 class SimpleRender : public IRender
 {
 public:
-  const std::string VERTEX_SHADER_PATH = "../resources/shaders/simple.vert";
+  const std::string VERTEX_SHADER_PATH   = "../resources/shaders/simple.vert";
+  const std::string CULLING_SHADER_PATH  = "../resources/shaders/culling.comp";
   const std::string FRAGMENT_SHADER_PATH = "../resources/shaders/simple.frag";
 
   SimpleRender(uint32_t a_width, uint32_t a_height);
@@ -89,7 +90,6 @@ protected:
   struct
   {
     LiteMath::float4x4 projView;
-    LiteMath::float4x4 model;
   } pushConst2M;
 
   UniformParams m_uniforms {};

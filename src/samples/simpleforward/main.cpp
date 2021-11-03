@@ -6,7 +6,7 @@ void initVulkanGLFW(std::shared_ptr<IRender> &app, GLFWwindow* window, int devic
 {
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions;
-  glfwExtensions  = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+  glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
   if(glfwExtensions == nullptr)
   {
@@ -31,7 +31,7 @@ int main()
   constexpr int VULKAN_DEVICE_ID = 0;
 
   std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SIMPLE_FORWARD);
-//  std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SIMPLE_TEXTURE);
+//std::shared_ptr<IRender> app = CreateRender(WIDTH, HEIGHT, RenderEngineType::SIMPLE_TEXTURE);
 
   if(app == nullptr)
   {
@@ -43,7 +43,7 @@ int main()
 
   initVulkanGLFW(app, window, VULKAN_DEVICE_ID);
 
-  app->LoadScene("../resources/scenes/043_cornell_normals/statex_00001.xml", false);
+  app->LoadScene("../resources/scenes/043_cornell_normals/bunny_cornell.xml", false);
 
   bool showGUI = true;
   mainLoop(app, window, showGUI);

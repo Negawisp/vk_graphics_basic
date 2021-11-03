@@ -1,8 +1,11 @@
 #ifndef VK_GRAPHICS_BASIC_COMMON_H
 #define VK_GRAPHICS_BASIC_COMMON_H
 
+#define INSTANCES_N 100
+
 #ifdef __cplusplus
 #include <LiteMath.h>
+
 using LiteMath::uint2;
 using LiteMath::float2;
 using LiteMath::float3;
@@ -25,7 +28,8 @@ struct UniformParams
   vec3  lightPos;
   float time;
   vec3  baseColor;
-  bool animateLightColor;
+  bool  animateLightColor;
+  mat4  modelMatrix[INSTANCES_N];
 };
 
 #endif //VK_GRAPHICS_BASIC_COMMON_H

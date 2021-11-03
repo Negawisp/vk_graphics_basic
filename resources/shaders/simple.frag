@@ -40,5 +40,6 @@ void main()
     vec4 color2 = max(dot(N, lightDir2), 0.0f) * lightColor2;
     vec4 color_lights = mix(color1, color2, 0.2f);
 
-    out_fragColor = color_lights * vec4(Params.baseColor, 1.0f);
+//  out_fragColor = color_lights * vec4(Params.baseColor, 1.0f);
+    out_fragColor = lightColor2;
 }
