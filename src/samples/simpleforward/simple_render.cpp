@@ -198,24 +198,22 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
 
 
   //// Setting instance positions
-  float xOffset = -9.f;
-  float yOffset = 9.f;
+  uint32_t rowN    = LiteMath::sqrt((float)INSTANCES_N);
+  float    spacing = 10;
 
-  float scale = 0.5;
-  mat4 scaleMatrix = mat4();
-  for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 4; j++) {
-          scaleMatrix[i][j] *= scale;
-      }
-  }
+  float x0 = spacing * rowN / 2;
+  float y0 = -x0;
 
-  for (int x = 0; x < INSTANCES_N; ++x) {
-      if (x > 0 && x % 5 == 0) {
-          xOffset = -9.f;
-          yOffset -= 3.0f;
+  float x = x0;
+  float y = y0;
+
+  for (int i = 0; i < INSTANCES_N; i++) {
+      if (i > 0 && i % rowN == 0) {
+          x  = x0;
+          y += spacing;
       }
-      m_uniforms.modelMatrix[x] = LiteMath::translate4x4(vec3(xOffset, yOffset, 0)) * scaleMatrix;
-      xOffset += 22.f / 5.f;
+      m_uniforms.modelMatrix[i] = LiteMath::translate4x4(vec3(x, y, 0));
+      x -= spacing;
   }
 
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
