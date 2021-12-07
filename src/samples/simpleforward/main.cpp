@@ -45,7 +45,7 @@ int main()
 
   app->LoadScene("../resources/scenes/043_cornell_normals/statex_00001.xml", false);
 
-  bool showGUI = true;
+  bool showGUI = false;
   mainLoop(app, window, showGUI);
 
   return 0;
