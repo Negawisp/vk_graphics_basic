@@ -27,8 +27,8 @@ void SimpleRenderTexture::LoadScene(const char* path, bool transpose_inst_matric
 
   for (uint32_t i = 0; i < m_framesInFlight; ++i)
   {
-    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
-      m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
+    BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_mainFrameBuffers[i],
+                             m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
   }
 }
 
@@ -104,7 +104,7 @@ void SimpleRenderTexture::SetupSimplePipeline()
   maker.SetDefaultState(m_width, m_height);
 
   m_basicForwardPipeline.pipeline = maker.MakePipeline(m_device, m_pScnMgr->GetPipelineVertexInputStateCreateInfo(),
-    m_screenRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
+                                                       m_mainRenderPass, {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR});
 }
 
 void SimpleRenderTexture::DrawFrame(float a_time, DrawMode a_mode)
@@ -146,7 +146,7 @@ void SimpleRenderTexture::ProcessInput(const AppInput &input)
 
     for (uint32_t i = 0; i < m_framesInFlight; ++i)
     {
-      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
+      BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_mainFrameBuffers[i],
         m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
     }
   }

@@ -12,14 +12,18 @@
 #include <vk_fbuf_attachment.h>
 #include <vk_images.h>
 #include <vk_swapchain.h>
+#include <vk_quad.h>
 #include <string>
 #include <iostream>
 
 class SimpleRender : public IRender
 {
 public:
-  const std::string VERTEX_SHADER_PATH = "../resources/shaders/simple.vert";
+  const std::string VERTEX_SHADER_PATH   = "../resources/shaders/simple.vert";
   const std::string FRAGMENT_SHADER_PATH = "../resources/shaders/simple.frag";
+
+  const std::string QUAD_VERTEX_SHADER_PATH   = "../resources/shaders/quad3_vert.vert";
+  const std::string QUAD_FRAGMENT_SHADER_PATH = "../resources/shaders/my_quad.frag";
 
   SimpleRender(uint32_t a_width, uint32_t a_height);
   ~SimpleRender()  { Cleanup(); };
@@ -99,17 +103,30 @@ protected:
 
   pipeline_data_t m_basicForwardPipeline {};
 
+  // *** Main rendering
   VkDescriptorSet m_dSet = VK_NULL_HANDLE;
   VkDescriptorSetLayout m_dSetLayout = VK_NULL_HANDLE;
-  VkRenderPass m_screenRenderPass = VK_NULL_HANDLE; // main renderpass
+  VkRenderPass m_mainRenderPass = VK_NULL_HANDLE;
+  // ***
+
+  // *** Postfx rendering
+  VkDescriptorSet m_quad_dSet             = VK_NULL_HANDLE;
+  VkDescriptorSetLayout m_quad_dSetLayout = VK_NULL_HANDLE;
+  VkRenderPass m_quadRenderPass         = VK_NULL_HANDLE;
+
+  vk_utils::VulkanImageMem m_image {};
+  VkSampler m_sampler;
+  std::shared_ptr<vk_utils::IQuad> m_pFSQuad;
+  // ***
 
   std::shared_ptr<vk_utils::DescriptorMaker> m_pBindings = nullptr;
 
   // *** presentation
   VkSurfaceKHR m_surface = VK_NULL_HANDLE;
   VulkanSwapChain m_swapchain;
-  std::vector<VkFramebuffer> m_frameBuffers;
-  vk_utils::VulkanImageMem m_depthBuffer{};
+  std::vector<VkFramebuffer> m_mainFrameBuffers;
+  vk_utils::VulkanImageMem m_depthBuffer {};
+  VkFramebuffer m_quadFrameBuffer;
   // ***
 
   // *** GUI
