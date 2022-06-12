@@ -154,11 +154,16 @@ private:
       cam.up     = float3(0, 1, 0);
   
       radius          = 5.0f;
+      innerCos        = 0.99f;
+      outerCos        = 0.97f;
+
       lightTargetDist = 20.0f;
       usePerspectiveM = true;
     }
 
     float  radius;           ///!< ignored when usePerspectiveM == true 
+    float  innerCos;
+    float  outerCos;
     float  lightTargetDist;  ///!< identify depth range
     Camera cam;              ///!< user control for light to later get light worldViewProj matrix
     bool   usePerspectiveM;  ///!< use perspective matrix if true and ortographics otherwise

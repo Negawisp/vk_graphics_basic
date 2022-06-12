@@ -26,6 +26,10 @@ struct UniformParams
   float time;
   vec3  baseColor;
   bool animateLightColor;
+  vec3 spotlightDir;
+  float spotlightRadius;
+  float spotlightInnerCos;
+  float spotlightOuterCos;
 };
 
 #endif //VK_GRAPHICS_BASIC_COMMON_H
