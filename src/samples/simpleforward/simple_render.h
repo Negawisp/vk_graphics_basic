@@ -90,6 +90,7 @@ protected:
   {
     LiteMath::float4x4 projView;
     LiteMath::float4x4 model;
+    uint32_t usePregenHeightmap;
   } pushConst2M;
 
   UniformParams m_uniforms {};
@@ -137,6 +138,7 @@ protected:
   vk_utils::VulkanImageMem m_heightmapTexture{};
   VkSampler m_heightmapTextureSampler = VK_NULL_HANDLE;
   std::string m_heightmapTexturePath  = "../resources/textures/heightmap.png";
+  bool m_usePregenHeightmap;
   
   // Terrain detalization choice
   int m_terrainId = 0;

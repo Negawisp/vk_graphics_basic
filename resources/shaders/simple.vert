@@ -4,6 +4,7 @@
 
 #include "unpack_attributes.h"
 #include "common.h"
+#include "noise.glsl"
 
 
 layout(location = 0) in vec4 vPosNorm;
@@ -13,6 +14,7 @@ layout(push_constant) uniform params_t
 {
     mat4 mProjView;
     mat4 mModel;
+    bool usePregenHeightmap;
 } params;
 
 
@@ -31,6 +33,12 @@ layout (location = 0 ) out VS_OUT
     vec2 texCoord;
 } vOut;
 
+float heightAt(vec2 p)
+{
+    return params.usePregenHeightmap ? textureLod(heightmap, p, 0).x
+                                     : fbm(p * 2);
+}
+
 out gl_PerVertex { vec4 gl_Position; };
 void main(void)
 {
@@ -44,17 +52,17 @@ void main(void)
     vOut.texCoord = vTexCoordAndTang.xy;
 
     // Height
-    float height = textureLod(heightmap, vOut.texCoord, 0).x * HeightMult;
+    float height = heightAt(vOut.texCoord) * HeightMult;
     vOut.wPos.y = height;
     
     // Normal
     vec2 d  = vec2(1 / MapSize.x, 1 / MapSize.y);
     vec2 dx = vec2(d.x , 0.0);
     vec2 dy = vec2(0.0 , d.y);
-    float r = textureLod(heightmap, vOut.texCoord + dx, 0).x;
-    float l = textureLod(heightmap, vOut.texCoord - dx, 0).x;
-    float t = textureLod(heightmap, vOut.texCoord + dy, 0).x;
-    float b = textureLod(heightmap, vOut.texCoord - dy, 0).x;
+    float r = heightAt(vOut.texCoord + dx);
+    float l = heightAt(vOut.texCoord - dx);
+    float t = heightAt(vOut.texCoord + dy);
+    float b = heightAt(vOut.texCoord - dy);
     vec3 norm = vec3((r - l) / (2.0f * d.x), -1.0f, (t - b) / (2.0f * d.y));
     norm = normalize(norm);
     vOut.wNorm = norm;
@@ -75,7 +83,8 @@ void main(void)
       {
         rayPos += step;
 
-        float obstacleHeight = textureLod(heightmap, rayPos.xz, 0).x * HeightMult;
+        float obstacleHeight = heightAt(rayPos.xz) * HeightMult;
+
         if (obstacleHeight > rayPos.y) {
           shadow = 0.0;
           break;

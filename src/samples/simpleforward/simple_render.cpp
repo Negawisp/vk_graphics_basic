@@ -229,6 +229,8 @@ void SimpleRender::UpdateUniformBuffer(float a_time)
 // most uniforms are updated in GUI -> SetupGUIElements()
   m_uniforms.time = a_time;
   memcpy(m_uboMappedMem, &m_uniforms, sizeof(m_uniforms));
+
+  pushConst2M.usePregenHeightmap = m_usePregenHeightmap;
 }
 
 void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebuffer a_frameBuff,
@@ -593,6 +595,7 @@ void SimpleRender::SetupGUIElements()
 
     ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
     ImGui::Checkbox("Animate light source color", &m_uniforms.animateLightColor);
+    ImGui::Checkbox("Use pregen heightmap (true) or noise", &m_usePregenHeightmap);
     ImGui::SliderFloat3("Light source direction", m_uniforms.lightPos.M, -10.f, 10.f);
     ImGui::SliderInt("Terrain detalization", &m_terrainId, 0, m_pScnMgr->GetTerrainResolutionNum() - 1);
 
