@@ -4,6 +4,7 @@
 #include <geom/vk_mesh.h>
 #include <vk_pipeline.h>
 #include <vk_buffers.h>
+#include "loader_utils/images.h"
 
 SimpleRender::SimpleRender(uint32_t a_width, uint32_t a_height) : m_width(a_width), m_height(a_height)
 {
@@ -28,6 +29,35 @@ void SimpleRender::SetupValidationLayers()
 {
   m_validationLayers.push_back("VK_LAYER_KHRONOS_validation");
   m_validationLayers.push_back("VK_LAYER_LUNARG_monitor");
+}
+
+void SimpleRender::LoadTexture(std::string &texturePath, vk_utils::VulkanImageMem &texture, VkSampler &sampler)
+{
+  int w, h, channels;
+  auto pixels = loadImageLDR(texturePath.c_str(), w, h, channels);
+
+  if (pixels == nullptr)
+  {
+    std::stringstream ss;
+    ss << "Failed loading texture from " << texturePath;
+    vk_utils::logWarning(ss.str());
+    return;
+  }
+
+  // in this sample we simply reallocate memory every time
+  // in more practical scenario you would try to reuse the same memory
+  // or even better utilize some sort of allocator
+  vk_utils::deleteImg(m_device, &texture);
+  if (sampler != VK_NULL_HANDLE)
+  {
+    vkDestroySampler(m_device, sampler, VK_NULL_HANDLE);
+  }
+
+  int mipLevels = 1;
+  texture       = allocateColorTextureFromDataLDR(m_device, m_physicalDevice, pixels, w, h, mipLevels, VK_FORMAT_R8G8B8A8_UNORM, m_pScnMgr->GetCopyHelper());
+  sampler       = vk_utils::createSampler(m_device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK);
+
+  freeImageMemLDR(pixels);
 }
 
 void SimpleRender::InitVulkan(const char** a_instanceExtensions, uint32_t a_instanceExtensionsCount, uint32_t a_deviceId)
@@ -128,14 +158,16 @@ void SimpleRender::CreateDevice(uint32_t a_deviceId)
 void SimpleRender::SetupSimplePipeline()
 {
   std::vector<std::pair<VkDescriptorType, uint32_t> > dtypes = {
-      {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1}
+    {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,             1},
+    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,     1}
   };
 
   if(m_pBindings == nullptr)
     m_pBindings = std::make_shared<vk_utils::DescriptorMaker>(m_device, dtypes, 1);
 
-  m_pBindings->BindBegin(VK_SHADER_STAGE_FRAGMENT_BIT);
+  m_pBindings->BindBegin(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
   m_pBindings->BindBuffer(0, m_ubo, VK_NULL_HANDLE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  m_pBindings->BindImage(1, m_heightmapTexture.view, m_heightmapTextureSampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
   m_pBindings->BindEnd(&m_dSet, &m_dSetLayout);
 
   // if we are recreating pipeline (for example, to reload shaders)
@@ -185,7 +217,7 @@ void SimpleRender::CreateUniformBuffer()
 
   vkMapMemory(m_device, m_uboAlloc, 0, sizeof(m_uniforms), 0, &m_uboMappedMem);
 
-  m_uniforms.lightPos = LiteMath::float3(0.0f, 1.0f, 1.0f);
+  m_uniforms.lightPos = LiteMath::float3(0.0f, -10.0f, 2.0f);
   m_uniforms.baseColor = LiteMath::float3(0.9f, 0.92f, 1.0f);
   m_uniforms.animateLightColor = true;
 
@@ -243,15 +275,12 @@ void SimpleRender::BuildCommandBufferSimple(VkCommandBuffer a_cmdBuff, VkFramebu
     vkCmdBindVertexBuffers(a_cmdBuff, 0, 1, &vertexBuf, &zero_offset);
     vkCmdBindIndexBuffer(a_cmdBuff, indexBuf, 0, VK_INDEX_TYPE_UINT32);
 
-    for (uint32_t i = 0; i < m_pScnMgr->InstancesNum(); ++i)
+    // Draw terrain
     {
-      auto inst = m_pScnMgr->GetInstanceInfo(i);
+      pushConst2M.model = m_pScnMgr->GetInstanceMatrix(m_terrainId);
+      vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0, sizeof(pushConst2M), &pushConst2M);
 
-      pushConst2M.model = m_pScnMgr->GetInstanceMatrix(i);
-      vkCmdPushConstants(a_cmdBuff, m_basicForwardPipeline.layout, stageFlags, 0,
-                         sizeof(pushConst2M), &pushConst2M);
-
-      auto mesh_info = m_pScnMgr->GetMeshInfo(inst.mesh_id);
+      auto mesh_info = m_pScnMgr->GetMeshInfo(m_terrainId);
       vkCmdDrawIndexed(a_cmdBuff, mesh_info.m_indNum, 1, mesh_info.m_indexOffset, mesh_info.m_vertexOffset, 0);
     }
 
@@ -463,12 +492,14 @@ void SimpleRender::LoadScene(const char* path, bool transpose_inst_matrices)
 {
   m_pScnMgr->LoadSceneXML(path, transpose_inst_matrices);
 
+  LoadTexture(m_heightmapTexturePath, m_heightmapTexture, m_heightmapTextureSampler);
+
   CreateUniformBuffer();
   SetupSimplePipeline();
 
   auto loadedCam = m_pScnMgr->GetCamera(0);
   m_cam.fov = loadedCam.fov;
-  m_cam.pos = float3(loadedCam.pos);
+  m_cam.pos = float3(0.0, 2.0, 0.0);
   m_cam.up  = float3(loadedCam.up);
   m_cam.lookAt = float3(loadedCam.lookAt);
   m_cam.tdist  = loadedCam.farPlane;
@@ -480,6 +511,8 @@ void SimpleRender::LoadScene(const char* path, bool transpose_inst_matrices)
     BuildCommandBufferSimple(m_cmdBuffersDrawMain[i], m_frameBuffers[i],
                              m_swapchain.GetAttachment(i).view, m_basicForwardPipeline.pipeline);
   }
+
+  m_terrainId = m_pScnMgr->GetTerrainResolutionNum() - 1;
 }
 
 void SimpleRender::DrawFrameSimple()
@@ -560,7 +593,8 @@ void SimpleRender::SetupGUIElements()
 
     ImGui::ColorEdit3("Meshes base color", m_uniforms.baseColor.M, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_NoInputs);
     ImGui::Checkbox("Animate light source color", &m_uniforms.animateLightColor);
-    ImGui::SliderFloat3("Light source position", m_uniforms.lightPos.M, -10.f, 10.f);
+    ImGui::SliderFloat3("Light source direction", m_uniforms.lightPos.M, -10.f, 10.f);
+    ImGui::SliderInt("Terrain detalization", &m_terrainId, 0, m_pScnMgr->GetTerrainResolutionNum() - 1);
 
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 

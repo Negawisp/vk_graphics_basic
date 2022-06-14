@@ -133,6 +133,14 @@ protected:
 
   std::shared_ptr<SceneManager> m_pScnMgr;
 
+  // Heightmap
+  vk_utils::VulkanImageMem m_heightmapTexture{};
+  VkSampler m_heightmapTextureSampler = VK_NULL_HANDLE;
+  std::string m_heightmapTexturePath  = "../resources/textures/heightmap.png";
+  
+  // Terrain detalization choice
+  int m_terrainId = 0;
+
   void DrawFrameSimple();
 
   void CreateInstance();
@@ -153,6 +161,9 @@ protected:
   void SetupDeviceFeatures();
   void SetupDeviceExtensions();
   void SetupValidationLayers();
+
+  // Heightmap
+  void LoadTexture(std::string &texturePath, vk_utils::VulkanImageMem &texture, VkSampler &sampler);
 };
 
 

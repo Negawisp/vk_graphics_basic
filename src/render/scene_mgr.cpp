@@ -43,18 +43,14 @@ bool SceneManager::LoadSceneXML(const std::string &scenePath, bool transpose)
     return false;
   }
 
-  for(auto loc : hscene_main->MeshFiles())
-  {
-    auto meshId    = AddMeshFromFile(loc);
-    auto instances = hscene_main->GetAllInstancesOfMeshLoc(loc); 
-    for(size_t j = 0; j < instances.size(); ++j)
-    {
-      if(transpose)
-        InstanceMesh(meshId, LiteMath::transpose(instances[j]));
-      else
-        InstanceMesh(meshId, instances[j]);
-    }
-  }
+  float3 terrainPos(0, 0, 0);
+  float terrainScale = 10;
+  AddTerrainMesh(16, terrainPos, terrainScale);
+  AddTerrainMesh(32, terrainPos, terrainScale);
+  AddTerrainMesh(64, terrainPos, terrainScale);
+  AddTerrainMesh(128, terrainPos, terrainScale);
+  AddTerrainMesh(256, terrainPos, terrainScale);
+  AddTerrainMesh(512, terrainPos, terrainScale);
 
   for(auto cam : hscene_main->Cameras())
   {
@@ -211,6 +207,75 @@ void SceneManager::UnmarkInstance(const uint32_t instId)
   m_instanceInfos[instId].renderMark = false;
 }
 
+void SceneManager::MakeTerrainMesh(cmesh::SimpleMesh &mesh, int resolution)
+{
+  resolution += 1;
+
+  float step    = 1.0f / resolution;
+  float offsetX = 0.5f;
+  float offsetZ = 0.5f;
+
+  mesh.vPos4f.resize(4 * resolution * resolution);
+  mesh.vNorm4f.resize(4 * resolution * resolution);
+  mesh.vTexCoord2f.resize(2 * resolution * resolution);
+  mesh.vTang4f = std::vector<float>(mesh.vPos4f.size(), 0);
+
+  int posK  = 0;
+  int normK = 0;
+  int texCoordK = 0;
+
+  for (int i = 0; i < resolution; ++i)
+  {
+    for (int j = 0; j < resolution; ++j)
+    {
+      mesh.vPos4f[posK++] = j * step - offsetX;
+      mesh.vPos4f[posK++] = 0.0f;
+      mesh.vPos4f[posK++] = i * step - offsetZ;
+      mesh.vPos4f[posK++] = 1.0f;
+
+      mesh.vNorm4f[normK++] = 0.0f;
+      mesh.vNorm4f[normK++] = 1.0f;
+      mesh.vNorm4f[normK++] = 0.0f;
+      mesh.vNorm4f[normK++] = 0.0f;
+
+      mesh.vTexCoord2f[texCoordK++] = (float)j * step;
+      mesh.vTexCoord2f[texCoordK++] = (float)i * step;
+    }
+  }
+
+  mesh.indices.resize(6 * (resolution - 1) * (resolution - 1));
+  int indicesK = 0;
+
+  auto to_index = [&](int i, int j) {
+    return i * resolution + j;
+  };
+
+  for (int i = 0; i < resolution - 1; ++i)
+  {
+    for (int j = 0; j < resolution - 1; ++j)
+    {
+      mesh.indices[indicesK++] = to_index(i, j);
+      mesh.indices[indicesK++] = to_index(i, j + 1);
+      mesh.indices[indicesK++] = to_index(i + 1, j);
+
+      mesh.indices[indicesK++] = to_index(i + 1, j);
+      mesh.indices[indicesK++] = to_index(i + 1, j + 1);
+      mesh.indices[indicesK++] = to_index(i, j + 1);
+    }
+  }
+}
+
+void SceneManager::AddTerrainMesh(int resolution, float3 pos, float scale)
+{
+  cmesh::SimpleMesh terrainMesh = cmesh::SimpleMesh();;
+  MakeTerrainMesh(terrainMesh, resolution);
+
+  uint32_t           terrainMeshId  = AddMeshFromData(terrainMesh);
+  LiteMath::float4x4 terrainMeshMat = LiteMath::translate4x4(pos) * LiteMath::scale4x4(float3(scale));
+
+  m_instanceMatrices.push_back(terrainMeshMat);
+}
+
 void SceneManager::LoadGeoDataOnGPU()
 {
   VkDeviceSize vertexBufSize = m_pMeshData->VertexDataSize();
@@ -239,7 +304,7 @@ void SceneManager::LoadGeoDataOnGPU()
 
 void SceneManager::DrawMarkedInstances()
 {
-
+  
 }
 
 void SceneManager::DestroyScene()
